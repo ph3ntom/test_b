@@ -1,0 +1,6 @@
+{
+  "title": "익명 사용자 질문 - React Hook 사용법과 상태관리",
+  "description": "React Hook을 처음 사용해보는데 useState와 useEffect의 차이점이 무엇인가요? useState는 상태를 관리하고 useEffect는 사이드 이펙트를 처리한다고 알고 있는데, 실제 프로젝트에서는 어떻게 활용해야 하는지 궁금합니다. 특히 dependency array의 역할과 언제 사용해야 하는지 알려주세요.",
+  "tags": ["react", "hooks", "useState", "useEffect"],
+  "mbrId": 0
+}

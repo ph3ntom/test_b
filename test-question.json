@@ -1,0 +1,5 @@
+{
+  "title": "익명 사용자 질문 - React Hook 사용법",
+  "description": "React Hook을 처음 사용해보는데 useState와 useEffect의 차이점이 무엇인가요?\n\n위 코드에서 dependency array의 역할이 궁금합니다.",
+  "tags": ["react", "hooks", "useState", "useEffect"]
+}
