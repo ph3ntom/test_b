@@ -10,7 +10,7 @@ import { User } from '../auth/entities/user.entity';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { QuestionResponseDto } from './dto/question-response.dto';
-import { plainToClass } from 'class-transformer';
+import { FileValidator } from '../common/utils/file-validator.util';
 
 @Injectable()
 export class QuestionService {
@@ -124,9 +124,7 @@ export class QuestionService {
       relations: ['user'],
     });
 
-    return plainToClass(QuestionResponseDto, questionWithUser, {
-      excludeExtraneousValues: true,
-    });
+    return QuestionResponseDto.fromEntity(questionWithUser);
   }
 
   async findAll(): Promise<QuestionResponseDto[]> {
@@ -135,11 +133,7 @@ export class QuestionService {
       order: { createdAt: 'DESC' },
     });
 
-    return questions.map(question =>
-      plainToClass(QuestionResponseDto, question, {
-        excludeExtraneousValues: true,
-      })
-    );
+    return questions.map(question => QuestionResponseDto.fromEntity(question));
   }
 
   async findOne(id: number): Promise<any> {
@@ -154,9 +148,7 @@ export class QuestionService {
 
     await this.questionRepository.increment({ id }, 'views', 1);
 
-    const questionDto = plainToClass(QuestionResponseDto, questionWithUser, {
-      excludeExtraneousValues: true,
-    });
+    const questionDto = QuestionResponseDto.fromEntity(questionWithUser);
 
     const answersData =
       questionWithUser.answersRelation?.map((answer) => ({
@@ -172,8 +164,16 @@ export class QuestionService {
         },
       })) || [];
 
+    // 파일 경로에서 파일명만 추출 (경로 노출 방지)
+    let attachmentFileName: string | null = null;
+    if (questionWithUser.attachment) {
+      const parts = questionWithUser.attachment.replace(/\\/g, '/').split('/');
+      attachmentFileName = parts[parts.length - 1];
+    }
+
     return {
       ...questionDto,
+      attachment: attachmentFileName, // 파일명만 반환
       answersCount: questionDto.answers,
       answers: answersData,
     };
@@ -208,14 +208,16 @@ export class QuestionService {
 
     // 파일이 업로드된 경우 파일 경로 업데이트
     if (file) {
+      // 기존 파일이 있으면 삭제
+      if (question.attachment) {
+        await FileValidator.deleteFile(question.attachment);
+      }
       question.attachment = file.path;
     }
 
     const updatedQuestion = await this.questionRepository.save(question);
 
-    return plainToClass(QuestionResponseDto, updatedQuestion, {
-      excludeExtraneousValues: true,
-    });
+    return QuestionResponseDto.fromEntity(updatedQuestion);
   }
 
   async remove(id: number, mbrId: number): Promise<void> {
@@ -235,6 +237,11 @@ export class QuestionService {
     // 권한 검증: 본인의 질문만 삭제 가능
     if (question.mbrId !== mbrId) {
       throw new ForbiddenException('본인의 질문만 삭제할 수 있습니다.');
+    }
+
+    // 첨부 파일이 있으면 삭제
+    if (question.attachment) {
+      await FileValidator.deleteFile(question.attachment);
     }
 
     await this.questionRepository.remove(question);
@@ -261,9 +268,20 @@ export class QuestionService {
 
     const updatedQuestion = await this.questionRepository.save(question);
 
-    return plainToClass(QuestionResponseDto, updatedQuestion, {
-      excludeExtraneousValues: true,
+    return QuestionResponseDto.fromEntity(updatedQuestion);
+  }
+
+  // 파일 다운로드를 위한 원본 attachment 경로 반환
+  async getAttachmentPath(id: number): Promise<string | null> {
+    const question = await this.questionRepository.findOne({
+      where: { id },
     });
+
+    if (!question) {
+      throw new NotFoundException('Question not found');
+    }
+
+    return question.attachment;
   }
 }
 

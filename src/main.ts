@@ -13,6 +13,14 @@ async function bootstrap() {
   // 정적 파일 제공 설정 (업로드된 파일 접근용)
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {
     prefix: '/uploads/',
+    setHeaders: (res, path) => {
+      // XSS 방지: MIME 타입 스니핑 차단
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      // 다운로드 강제 (실행 방지)
+      res.setHeader('Content-Disposition', 'attachment');
+      // XSS 보호
+      res.setHeader('X-XSS-Protection', '1; mode=block');
+    },
   });
 
   // ⭐ Redis 클라이언트 생성

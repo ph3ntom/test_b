@@ -15,6 +15,7 @@ import {
   Res,
   NotFoundException,
   StreamableFile,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -25,6 +26,7 @@ import { QuestionService } from './question.service';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { QuestionResponseDto } from './dto/question-response.dto';
+import { FileValidator } from '../common/utils/file-validator.util';
 
 @Controller('questions')
 export class QuestionController {
@@ -36,30 +38,35 @@ export class QuestionController {
       storage: diskStorage({
         destination: './uploads/questions',
         filename: (req, file, callback) => {
+          // 파일명 안전화
+          const safeName = FileValidator.sanitizeFilename(file.originalname);
+          const ext = extname(safeName).toLowerCase();
+
+          // 화이트리스트 확장자만 허용 (추가 검증)
+          const allowedExts = ['.jpg', '.jpeg', '.png', '.gif', '.pdf', '.doc', '.docx', '.txt'];
+          if (!allowedExts.includes(ext)) {
+            return callback(
+              new BadRequestException(`허용되지 않는 파일 확장자입니다: ${ext}`),
+              '',
+            );
+          }
+
           const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-          const ext = extname(file.originalname);
           callback(null, `question-${uniqueSuffix}${ext}`);
         },
       }),
-      // fileFilter: (req, file, callback) => {
-      //   // 허용할 파일 타입 설정
-      //   const allowedMimes = [
-      //     'image/jpeg',
-      //     'image/png',
-      //     'image/gif',
-      //     'application/pdf',
-      //     'application/msword',
-      //     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      //     'text/plain',
-      //   ];
-      //   if (allowedMimes.includes(file.mimetype)) {
-      //     callback(null, true);
-      //   } else {
-      //     callback(new Error('Invalid file type. Only images, PDF, DOC, DOCX, and TXT files are allowed.'), false);
-      //   }
-      // },
+      fileFilter: (req, file, callback) => {
+        try {
+          // 파일 타입 검증
+          FileValidator.validateFileType(file as any);
+          callback(null, true);
+        } catch (error) {
+          callback(error, false);
+        }
+      },
       limits: {
         fileSize: 5 * 1024 * 1024, // 5MB 제한
+        files: 1, // 단일 파일만 허용
       },
     }),
   )
@@ -70,6 +77,26 @@ export class QuestionController {
     @Body('mbrId') mbrId: string,
     @UploadedFile() file?: Express.Multer.File,
   ): Promise<QuestionResponseDto> {
+    // 파일 크기 검증 (타입별 차등)
+    if (file) {
+      FileValidator.validateFileSize(file);
+
+      // Magic Number 검증 (파일 내용 검증)
+      const ext = extname(file.originalname).toLowerCase();
+      const isValidContent = await FileValidator.validateMagicNumber(
+        file.path,
+        ext,
+      );
+
+      if (!isValidContent) {
+        // 파일 삭제
+        await FileValidator.deleteFile(file.path);
+        throw new BadRequestException(
+          '파일 내용이 확장자와 일치하지 않습니다. 악성 파일일 수 있습니다.',
+        );
+      }
+    }
+
     // tags를 파싱 (JSON 문자열 또는 공백으로 구분된 문자열)
     let tagsArray: string[] = [];
     if (tags) {
@@ -108,30 +135,35 @@ export class QuestionController {
       storage: diskStorage({
         destination: './uploads/questions',
         filename: (req, file, callback) => {
+          // 파일명 안전화
+          const safeName = FileValidator.sanitizeFilename(file.originalname);
+          const ext = extname(safeName).toLowerCase();
+
+          // 화이트리스트 확장자만 허용 (추가 검증)
+          const allowedExts = ['.jpg', '.jpeg', '.png', '.gif', '.pdf', '.doc', '.docx', '.txt'];
+          if (!allowedExts.includes(ext)) {
+            return callback(
+              new BadRequestException(`허용되지 않는 파일 확장자입니다: ${ext}`),
+              '',
+            );
+          }
+
           const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-          const ext = extname(file.originalname);
           callback(null, `question-${uniqueSuffix}${ext}`);
         },
       }),
-      // fileFilter: (req, file, callback) => {
-      //   // 허용할 파일 타입 설정
-      //   const allowedMimes = [
-      //     'image/jpeg',
-      //     'image/png',
-      //     'image/gif',
-      //     'application/pdf',
-      //     'application/msword',
-      //     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      //     'text/plain',
-      //   ];
-      //   if (allowedMimes.includes(file.mimetype)) {
-      //     callback(null, true);
-      //   } else {
-      //     callback(new Error('Invalid file type. Only images, PDF, DOC, DOCX, and TXT files are allowed.'), false);
-      //   }
-      // },
+      fileFilter: (req, file, callback) => {
+        try {
+          // 파일 타입 검증
+          FileValidator.validateFileType(file as any);
+          callback(null, true);
+        } catch (error) {
+          callback(error, false);
+        }
+      },
       limits: {
         fileSize: 5 * 1024 * 1024, // 5MB 제한
+        files: 1, // 단일 파일만 허용
       },
     }),
   )
@@ -143,6 +175,26 @@ export class QuestionController {
     @Body('tags') tags?: string,
     @UploadedFile() file?: Express.Multer.File,
   ): Promise<QuestionResponseDto> {
+    // 파일 크기 검증 (타입별 차등)
+    if (file) {
+      FileValidator.validateFileSize(file);
+
+      // Magic Number 검증 (파일 내용 검증)
+      const ext = extname(file.originalname).toLowerCase();
+      const isValidContent = await FileValidator.validateMagicNumber(
+        file.path,
+        ext,
+      );
+
+      if (!isValidContent) {
+        // 파일 삭제
+        await FileValidator.deleteFile(file.path);
+        throw new BadRequestException(
+          '파일 내용이 확장자와 일치하지 않습니다. 악성 파일일 수 있습니다.',
+        );
+      }
+    }
+
     // tags를 파싱 (JSON 문자열 또는 공백으로 구분된 문자열)
     let tagsArray: string[] | undefined = undefined;
     if (tags) {
@@ -189,15 +241,15 @@ export class QuestionController {
     @Param('id', ParseIntPipe) id: number,
     @Res({ passthrough: true }) res: Response,
   ): Promise<StreamableFile> {
-    // 질문 정보 조회
-    const question = await this.questionService.findOne(id);
+    // 원본 attachment 경로 조회 (DB에서 직접)
+    const attachmentPath = await this.questionService.getAttachmentPath(id);
 
-    if (!question.attachment) {
+    if (!attachmentPath) {
       throw new NotFoundException('No attachment found for this question');
     }
 
     // 파일 경로 생성
-    const filePath = join(process.cwd(), question.attachment);
+    const filePath = join(process.cwd(), attachmentPath);
 
     // 파일 존재 여부 확인
     if (!existsSync(filePath)) {
@@ -205,7 +257,7 @@ export class QuestionController {
     }
 
     // 원본 파일명 추출 (question-timestamp-random- 부분 제거)
-    const fileName = question.attachment.split('/').pop() || 'attachment';
+    const fileName = attachmentPath.split(/[/\\]/).pop() || 'attachment';
     const originalFileName = fileName.replace(/^question-\d+-\d+-/, '');
 
     // Content-Disposition 헤더 설정 (다운로드 시 파일명 지정)
