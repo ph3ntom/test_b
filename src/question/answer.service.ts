@@ -105,8 +105,14 @@ export class AnswerService {
       throw new NotFoundException('Answer not found');
     }
 
-    if (mbrId > 0 && answer.mbrId !== mbrId) {
-      throw new ForbiddenException('You can only update your own answers');
+    // 권한 검증: 로그인 필수
+    if (!mbrId || mbrId === 0) {
+      throw new ForbiddenException('로그인이 필요합니다.');
+    }
+
+    // 권한 검증: 본인의 답변만 수정 가능
+    if (answer.mbrId !== mbrId) {
+      throw new ForbiddenException('본인의 답변만 수정할 수 있습니다.');
     }
 
     Object.assign(answer, updateAnswerDto);
@@ -127,10 +133,26 @@ export class AnswerService {
       throw new NotFoundException('Answer not found');
     }
 
-    // 취약점: 권한 검증 제거
-    // if (mbrId > 0 && answer.mbrId !== mbrId) {
-    //   throw new ForbiddenException('You can only delete your own answers');
-    // }
+    // 디버깅 로그
+    console.log('=== 답변 삭제 권한 검증 ===');
+    console.log('답변 ID:', id);
+    console.log('답변 소유자 mbrId:', answer.mbrId);
+    console.log('세션 mbrId:', mbrId);
+    console.log('타입 확인 - answer.mbrId:', typeof answer.mbrId, 'mbrId:', typeof mbrId);
+
+    // 권한 검증: 로그인 필수
+    if (!mbrId || mbrId === 0) {
+      console.log('❌ 권한 검증 실패: 로그인 필요');
+      throw new ForbiddenException('로그인이 필요합니다.');
+    }
+
+    // 권한 검증: 본인의 답변만 삭제 가능
+    if (answer.mbrId !== mbrId) {
+      console.log('❌ 권한 검증 실패: 소유자 불일치');
+      throw new ForbiddenException('본인의 답변만 삭제할 수 있습니다.');
+    }
+
+    console.log('✅ 권한 검증 통과: 답변 삭제 허용');
 
     await this.answerRepository.remove(answer);
     await this.questionRepository.decrement(

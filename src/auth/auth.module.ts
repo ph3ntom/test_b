@@ -28,19 +28,23 @@ import { SessionMiddleware } from '../common/middleware/session.middleware';
 })
 export class AuthModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    // ⭐ SessionMiddleware 적용 (보호된 라우트만)
+    // ⭐ SessionMiddleware 적용
+    // ⭐ UsersController는 공개 (사용자 목록/검색은 비로그인 사용자도 접근 가능)
+    // ⭐ 로그인, 회원가입, 세션 관련 API는 미들웨어 적용 안 함
     consumer
       .apply(SessionMiddleware)
       .exclude(
-        // 제외할 라우트
+        // 제외할 라우트 (공개 API)
         { path: 'auth/login/loginProcess', method: RequestMethod.POST },
         { path: 'auth/register', method: RequestMethod.POST },
         { path: 'auth/session/validate', method: RequestMethod.GET },
         { path: 'auth/session/logout', method: RequestMethod.POST },
+        { path: 'users', method: RequestMethod.GET }, // 사용자 목록 공개
+        { path: 'users/search', method: RequestMethod.GET }, // 사용자 검색 공개
       )
       .forRoutes(
-        // 적용할 라우트
-        UsersController,
+        // SessionController에만 적용 (activity, extend 엔드포인트)
+        SessionController,
       );
   }
 }

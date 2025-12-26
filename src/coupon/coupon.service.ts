@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -33,8 +34,13 @@ export class CouponService {
     );
   }
 
-  async useCoupon(useCouponDto: UseCouponDto): Promise<{ success: boolean; message: string; newPoints?: number }> {
-    const { couponCode, mbrId } = useCouponDto;
+  async useCoupon(useCouponDto: UseCouponDto, mbrId: number): Promise<{ success: boolean; message: string; newPoints?: number }> {
+    const { couponCode } = useCouponDto;
+
+    // 권한 검증: 로그인 필수
+    if (!mbrId || mbrId === 0) {
+      throw new ForbiddenException('로그인이 필요합니다.');
+    }
 
     const coupon = await this.couponRepository.findOne({
       where: { couponCode },
@@ -44,10 +50,15 @@ export class CouponService {
       throw new NotFoundException('쿠폰을 찾을 수 없습니다.');
     }
 
-    // 취약점: 쿠폰 사용 여부 검증 제거
-    // if (coupon.isUsed) {
-    //   throw new BadRequestException('이미 사용된 쿠폰입니다.');
-    // }
+    // 쿠폰 사용 여부 검증 (재사용 방지)
+    if (coupon.isUsed) {
+      console.log('=== 쿠폰 재사용 시도 감지 ===');
+      console.log('쿠폰 코드:', couponCode);
+      console.log('이미 사용됨:', coupon.isUsed);
+      console.log('사용자:', coupon.usedByMbrId);
+      console.log('사용 일시:', coupon.usedAt);
+      throw new BadRequestException('사용완료된 쿠폰번호입니다.');
+    }
 
     const user = await this.userRepository.findOne({
       where: { mbrId },
@@ -61,9 +72,9 @@ export class CouponService {
     user.point = (user.point || 0) + coupon.points;
     await this.userRepository.save(user);
 
-    // 쿠폰 사용 처리 (프론트엔드에서만 숨김)
+    // 쿠폰 사용 처리
     coupon.isUsed = true;
-    coupon.usedByMbrId = mbrId!;
+    coupon.usedByMbrId = mbrId;
     coupon.usedAt = new Date();
     await this.couponRepository.save(coupon);
 

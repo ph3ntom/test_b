@@ -7,7 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
-  Request,
+  Req,
   ValidationPipe,
   ParseIntPipe,
   UseInterceptors,
@@ -137,11 +137,10 @@ export class QuestionController {
   )
   async update(
     @Param('id', ParseIntPipe) id: number,
+    @Req() req,
     @Body('title') title?: string,
     @Body('description') description?: string,
     @Body('tags') tags?: string,
-    @Body('mbrId') mbrId?: string,
-    @Body('targetQuestionId') targetQuestionId?: string,  // 취약점: Body에서 수정할 게시물 ID 받기
     @UploadedFile() file?: Express.Multer.File,
   ): Promise<QuestionResponseDto> {
     // tags를 파싱 (JSON 문자열 또는 공백으로 구분된 문자열)
@@ -161,19 +160,20 @@ export class QuestionController {
     if (description) updateQuestionDto.description = description;
     if (tagsArray) updateQuestionDto.tags = tagsArray;
 
-    const userMbrId = mbrId ? parseInt(mbrId, 10) : 0;
-    const actualQuestionId = targetQuestionId ? parseInt(targetQuestionId, 10) : id;  // Body의 targetQuestionId가 있으면 우선 사용
+    // 세션에서 mbrId 추출 (클라이언트 값 신뢰 X)
+    const sessionMbrId = req.session?.mbrId || 0;
 
-    return this.questionService.update(actualQuestionId, updateQuestionDto, userMbrId, file);
+    return this.questionService.update(id, updateQuestionDto, sessionMbrId, file);
   }
 
   @Post(':id/del')
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Body('mbrId') mbrId?: number,
+    @Req() req,
   ): Promise<void> {
-    const userMbrId = mbrId || 0;
-    return this.questionService.remove(id, userMbrId);
+    // 세션에서 mbrId 추출 (클라이언트 값 신뢰 X)
+    const sessionMbrId = req.session?.mbrId || 0;
+    return this.questionService.remove(id, sessionMbrId);
   }
 
   @Post(':id/vote')

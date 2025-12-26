@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Like } from 'typeorm';
 import { User } from '../entities/user.entity';
 
 @Injectable()
@@ -22,29 +22,22 @@ export class UsersService {
     };
   }
 
-  // 취약한 검색 메서드 - SQL 인젝션 가능
+  // 안전한 검색 메서드 - SQL 인젝션 방어
   async searchUsers(searchQuery: string) {
-    // 보안 취약점: 사용자 입력을 직접 SQL 쿼리에 삽입
-    const query = `
-      SELECT userId, name, createdAt
-      FROM users
-      WHERE userId LIKE '%${searchQuery}%'
-      OR name LIKE '%${searchQuery}%'
-      ORDER BY createdAt DESC
-    `;
+    // TypeORM의 Like 연산자 사용 - 자동 파라미터화
+    const users = await this.usersRepository.find({
+      where: [
+        { userId: Like(`%${searchQuery}%`) },
+        { name: Like(`%${searchQuery}%`) },
+      ],
+      select: ['userId', 'name', 'createdAt'],
+      order: { createdAt: 'DESC' },
+    });
 
-    try {
-      const users = await this.usersRepository.query(query);
-      return {
-        users,
-        total: users.length,
-        searchQuery,
-      };
-    } catch (error: any) {
-      // MySQL 오류 정보를 그대로 전달
-      error.sql = error.sql || query;
-      error.searchQuery = searchQuery;
-      throw error;
-    }
+    return {
+      users,
+      total: users.length,
+      searchQuery,
+    };
   }
 }

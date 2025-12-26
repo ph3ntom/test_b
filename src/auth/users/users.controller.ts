@@ -19,15 +19,9 @@ export class UsersController {
     try {
       return await this.usersService.searchUsers(searchQuery);
     } catch (error: any) {
-      // 커스텀 오류 정보를 HTTP 응답으로 전달
+      // 보안: SQL 정보 노출 방지 - 일반적인 에러 메시지만 반환
       throw new HttpException({
-        message: 'Database Query Error',
-        sqlMessage: error.sqlMessage || error.message,
-        sql: error.sql,
-        code: error.code,
-        errno: error.errno,
-        sqlState: error.sqlState,
-        searchQuery: error.searchQuery || searchQuery,
+        message: 'An error occurred while searching users',
         timestamp: new Date().toISOString(),
       }, HttpStatus.INTERNAL_SERVER_ERROR);
     }

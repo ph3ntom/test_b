@@ -21,16 +21,69 @@ export class QuestionService {
     private userRepository: Repository<User>,
   ) {}
 
-  // 기본적인 이벤트 핸들러 필터링 (취약한 구현)
+  // HTML 입력값 필터링 및 특수문자 처리
   private sanitizeContent(content: string): string {
-    // 몇 개의 위험한 이벤트 핸들러만 필터링 (불완전한 보안)
-    const dangerousEvents = ['onerror', 'onload', 'onclick', 'onmouseover'];
+    if (!content) return '';
+
     let sanitized = content;
 
+    // 1. 위험한 이벤트 핸들러 필터링
+    const dangerousEvents = [
+      'onerror', 'onload', 'onclick', 'onmouseover', 'onmouseout',
+      'onmousedown', 'onmouseup', 'onmousemove', 'onkeydown', 'onkeyup',
+      'onkeypress', 'onfocus', 'onblur', 'onchange', 'onsubmit',
+      'ondblclick', 'oncontextmenu', 'oninput', 'onwheel', 'ondrag',
+      'ondrop', 'oncopy', 'oncut', 'onpaste', 'onabort', 'oncanplay',
+      'oncanplaythrough', 'ondurationchange', 'onemptied', 'onended',
+      'ontoggle', 'onreset', 'onscroll', 'onseeked', 'onseeking',
+      'onselect', 'onshow', 'onstalled', 'onsuspend', 'ontimeupdate',
+      'onvolumechange', 'onwaiting'
+    ];
+
     dangerousEvents.forEach(event => {
-      // 대소문자 구분 없이 제거하지만 다른 변형은 막지 못함
       const regex = new RegExp(event, 'gi');
       sanitized = sanitized.replace(regex, 'on_filtered');
+    });
+
+    // 2. 위험한 태그 제거
+    // <script> 태그 제거
+    sanitized = sanitized.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+    // <iframe> 태그 제거
+    sanitized = sanitized.replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '');
+    // <object> 태그 제거
+    sanitized = sanitized.replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '');
+    // <embed> 태그 제거
+    sanitized = sanitized.replace(/<embed\b[^>]*>/gi, '');
+    // <style> 태그 제거
+    sanitized = sanitized.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
+    // <link> 태그 제거
+    sanitized = sanitized.replace(/<link\b[^>]*>/gi, '');
+    // <meta> 태그 제거
+    sanitized = sanitized.replace(/<meta\b[^>]*>/gi, '');
+
+    // 3. 위험한 프로토콜 제거
+    sanitized = sanitized.replace(/javascript:/gi, 'blocked:');
+    sanitized = sanitized.replace(/vbscript:/gi, 'blocked:');
+    sanitized = sanitized.replace(/data:text\/html/gi, 'blocked:');
+
+    // 4. 특수문자 HTML 엔티티로 인코딩
+    // ' " < > / ( ) # & ` 문자를 HTML 엔티티로 변환
+    const specialCharsMap: { [key: string]: string } = {
+      "'": '&#39;',   // 작은따옴표
+      '"': '&quot;',  // 큰따옴표
+      '<': '&lt;',    // 작은 꺾쇠
+      '>': '&gt;',    // 큰 꺾쇠
+      '/': '&#x2F;',  // 슬래시
+      '(': '&#40;',   // 왼쪽 괄호
+      ')': '&#41;',   // 오른쪽 괄호
+      '#': '&#35;',   // 샵
+      '&': '&amp;',   // 앰퍼샌드
+      '`': '&#96;'    // 백틱
+    };
+
+    // 특수문자를 HTML 엔티티로 변환
+    sanitized = sanitized.replace(/['"><\/()#&`]/g, (char) => {
+      return specialCharsMap[char] || char;
     });
 
     return sanitized;
@@ -141,10 +194,15 @@ export class QuestionService {
       throw new NotFoundException('Question not found');
     }
 
-    // 취약점 진단을 위해 권한 검증 제거
-    // if (mbrId > 0 && question.mbrId !== mbrId) {
-    //   throw new ForbiddenException('You can only update your own questions');
-    // }
+    // 권한 검증: 로그인 필수
+    if (!mbrId || mbrId === 0) {
+      throw new ForbiddenException('로그인이 필요합니다.');
+    }
+
+    // 권한 검증: 본인의 질문만 수정 가능
+    if (question.mbrId !== mbrId) {
+      throw new ForbiddenException('본인의 질문만 수정할 수 있습니다.');
+    }
 
     Object.assign(question, updateQuestionDto);
 
@@ -169,10 +227,15 @@ export class QuestionService {
       throw new NotFoundException('Question not found');
     }
 
-    // 취약점 진단을 위해 권한 검증 제거
-    // if (mbrId > 0 && question.mbrId !== mbrId) {
-    //   throw new ForbiddenException('You can only delete your own questions');
-    // }
+    // 권한 검증: 로그인 필수
+    if (!mbrId || mbrId === 0) {
+      throw new ForbiddenException('로그인이 필요합니다.');
+    }
+
+    // 권한 검증: 본인의 질문만 삭제 가능
+    if (question.mbrId !== mbrId) {
+      throw new ForbiddenException('본인의 질문만 삭제할 수 있습니다.');
+    }
 
     await this.questionRepository.remove(question);
   }

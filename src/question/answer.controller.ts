@@ -8,6 +8,7 @@ import {
   Delete,
   ValidationPipe,
   ParseIntPipe,
+  Req,
 } from '@nestjs/common';
 import { AnswerService } from './answer.service';
 import { CreateAnswerDto } from './dto/create-answer.dto';
@@ -55,12 +56,11 @@ export class AnswerController {
   @Post(':id/del')
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Body('mbrId') mbrId?: number,
-    @Body('targetAnswerId') targetAnswerId?: number,  // 취약점: Body에서 답변 ID 받기
+    @Req() req,
   ): Promise<void> {
-    const userMbrId = mbrId || 0;
-    const actualAnswerId = targetAnswerId || id;  // Body 값이 우선
-    return this.answerService.remove(actualAnswerId, userMbrId);
+    // 세션에서 mbrId 추출 (클라이언트 값 신뢰 X)
+    const sessionMbrId = req.session?.mbrId || 0;
+    return this.answerService.remove(id, sessionMbrId);
   }
 
   @Post(':id/vote')
