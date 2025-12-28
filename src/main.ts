@@ -24,7 +24,7 @@ async function bootstrap() {
     },
   });
 
-  // ⭐ Redis 클라이언트 생성
+  // Redis 클라이언트 생성
   const redisClient = createClient({
     socket: {
       host: process.env.REDIS_HOST || 'localhost',
@@ -44,14 +44,14 @@ async function bootstrap() {
 
   await redisClient.connect();
 
-  // ⭐ Redis 세션 저장소 생성
+  // Redis 세션 저장소 생성
   const redisStore = new RedisStore({
     client: redisClient,
     prefix: 'sess:',
     ttl: parseInt(process.env.SESSION_MAX_AGE || '7200000') / 1000,
   });
 
-  // ⭐ 세션 미들웨어 설정 (Redis + Rolling)
+  // 세션 미들웨어 설정 (Redis + Rolling)
   app.use(
     session({
       store: redisStore,
@@ -72,13 +72,13 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe());
 
-  // ⭐ 글로벌 예외 필터 설정 (에러 코드 및 메시지 숨김)
+  // 글로벌 예외 필터 설정 (에러 코드 및 메시지 숨김)
   app.useGlobalFilters(new GlobalExceptionFilter());
 
   // 글로벌 API prefix 설정
   app.setGlobalPrefix('api');
 
-  // ⭐ CORS 설정 (환경 변수 사용)
+  // CORS 설정 (환경 변수 사용)
   app.enableCors({
     origin: [process.env.FRONTEND_URL || 'http://localhost:3000'],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
@@ -87,11 +87,10 @@ async function bootstrap() {
     exposedHeaders: ['Set-Cookie'],
   });
 
-  // 모든 IP에서 접근 허용 (0.0.0.0)
   const port = process.env.PORT || 3001;
   await app.listen(port, '0.0.0.0');
-  console.log(`🚀 Application is running on: http://localhost:${port}`);
-  console.log(`📝 API Prefix: /api`);
-  console.log(`🌐 CORS enabled for: ${process.env.FRONTEND_URL}`);
+  console.log(`Application is running on: http://localhost:${port}`);
+  console.log(`API Prefix: /api`);
+  console.log(`CORS enabled for: ${process.env.FRONTEND_URL}`);
 }
 bootstrap();
