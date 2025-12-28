@@ -22,7 +22,7 @@ import { SessionMiddleware } from '../common/middleware/session.middleware';
 })
 export class QuestionModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    // ⭐ SessionMiddleware 적용 (질문/답변 생성/수정/삭제는 로그인 필요)
+    // SessionMiddleware 적용
     consumer
       .apply(SessionMiddleware)
       .exclude(

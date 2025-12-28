@@ -27,7 +27,6 @@ export class QuestionService {
 
     let sanitized = content;
 
-    // 1. 위험한 이벤트 핸들러 필터링
     const dangerousEvents = [
       'onerror', 'onload', 'onclick', 'onmouseover', 'onmouseout',
       'onmousedown', 'onmouseup', 'onmousemove', 'onkeydown', 'onkeyup',
@@ -45,43 +44,31 @@ export class QuestionService {
       sanitized = sanitized.replace(regex, 'on_filtered');
     });
 
-    // 2. 위험한 태그 제거
-    // <script> 태그 제거
     sanitized = sanitized.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-    // <iframe> 태그 제거
     sanitized = sanitized.replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '');
-    // <object> 태그 제거
     sanitized = sanitized.replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '');
-    // <embed> 태그 제거
     sanitized = sanitized.replace(/<embed\b[^>]*>/gi, '');
-    // <style> 태그 제거
     sanitized = sanitized.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
-    // <link> 태그 제거
     sanitized = sanitized.replace(/<link\b[^>]*>/gi, '');
-    // <meta> 태그 제거
     sanitized = sanitized.replace(/<meta\b[^>]*>/gi, '');
 
-    // 3. 위험한 프로토콜 제거
     sanitized = sanitized.replace(/javascript:/gi, 'blocked:');
     sanitized = sanitized.replace(/vbscript:/gi, 'blocked:');
     sanitized = sanitized.replace(/data:text\/html/gi, 'blocked:');
 
-    // 4. 특수문자 HTML 엔티티로 인코딩
-    // ' " < > / ( ) # & ` 문자를 HTML 엔티티로 변환
     const specialCharsMap: { [key: string]: string } = {
-      "'": '&#39;',   // 작은따옴표
-      '"': '&quot;',  // 큰따옴표
-      '<': '&lt;',    // 작은 꺾쇠
-      '>': '&gt;',    // 큰 꺾쇠
-      '/': '&#x2F;',  // 슬래시
-      '(': '&#40;',   // 왼쪽 괄호
-      ')': '&#41;',   // 오른쪽 괄호
-      '#': '&#35;',   // 샵
-      '&': '&amp;',   // 앰퍼샌드
-      '`': '&#96;'    // 백틱
+      "'": '&#39;',  
+      '"': '&quot;',  
+      '<': '&lt;',   
+      '>': '&gt;',   
+      '/': '&#x2F;', 
+      '(': '&#40;',  
+      ')': '&#41;',   
+      '#': '&#35;',   
+      '&': '&amp;',   
+      '`': '&#96;'    
     };
 
-    // 특수문자를 HTML 엔티티로 변환
     sanitized = sanitized.replace(/['"><\/()#&`]/g, (char) => {
       return specialCharsMap[char] || char;
     });
@@ -93,7 +80,6 @@ export class QuestionService {
     createQuestionDto: CreateQuestionDto,
     file?: Express.Multer.File,
   ): Promise<QuestionResponseDto> {
-    // 로그인된 사용자만 질문 작성 허용
     const user = await this.userRepository.findOne({
       where: { mbrId: createQuestionDto.mbrId },
     });
@@ -103,7 +89,6 @@ export class QuestionService {
       );
     }
 
-    // 기본적인 필터링 적용 (여전히 취약함)
     const sanitizedDescription = this.sanitizeContent(createQuestionDto.description);
 
     const question = this.questionRepository.create({
@@ -164,7 +149,6 @@ export class QuestionService {
         },
       })) || [];
 
-    // 파일 경로에서 파일명만 추출 (경로 노출 방지)
     let attachmentFileName: string | null = null;
     if (questionWithUser.attachment) {
       const parts = questionWithUser.attachment.replace(/\\/g, '/').split('/');
@@ -173,7 +157,7 @@ export class QuestionService {
 
     return {
       ...questionDto,
-      attachment: attachmentFileName, // 파일명만 반환
+      attachment: attachmentFileName, 
       answersCount: questionDto.answers,
       answers: answersData,
     };
@@ -229,17 +213,14 @@ export class QuestionService {
       throw new NotFoundException('Question not found');
     }
 
-    // 권한 검증: 로그인 필수
     if (!mbrId || mbrId === 0) {
       throw new ForbiddenException('로그인이 필요합니다.');
     }
 
-    // 권한 검증: 본인의 질문만 삭제 가능
     if (question.mbrId !== mbrId) {
       throw new ForbiddenException('본인의 질문만 삭제할 수 있습니다.');
     }
 
-    // 첨부 파일이 있으면 삭제
     if (question.attachment) {
       await FileValidator.deleteFile(question.attachment);
     }

@@ -131,7 +131,7 @@ export class FileValidator {
   }
 
   /**
-   * Magic Number 검증 (파일 시그니처)
+   * Magic Number 검증
    */
   static async validateMagicNumber(
     filePath: string,
@@ -195,7 +195,6 @@ export class FileValidator {
       }
     } catch (error) {
       console.error(`파일 삭제 실패: ${filePath}`, error);
-      // 파일 삭제 실패는 치명적이지 않으므로 에러를 throw하지 않음
     }
   }
 }

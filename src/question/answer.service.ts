@@ -142,13 +142,13 @@ export class AnswerService {
 
     // 권한 검증: 로그인 필수
     if (!mbrId || mbrId === 0) {
-      console.log('❌ 권한 검증 실패: 로그인 필요');
+      console.log('권한 검증 실패: 로그인 필요');
       throw new ForbiddenException('로그인이 필요합니다.');
     }
 
     // 권한 검증: 본인의 답변만 삭제 가능
     if (answer.mbrId !== mbrId) {
-      console.log('❌ 권한 검증 실패: 소유자 불일치');
+      console.log('권한 검증 실패: 소유자 불일치');
       throw new ForbiddenException('본인의 답변만 삭제할 수 있습니다.');
     }
 

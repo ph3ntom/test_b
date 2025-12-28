@@ -5,15 +5,12 @@ import { Answer } from './src/question/entities/answer.entity';
 
 export default new DataSource({
   type: 'mysql',
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '3306'),
-  username: process.env.DB_USERNAME || 'root',
-  password: process.env.DB_PASSWORD || 'ehy1123?',
-  database: process.env.DB_NAME || 'node',
+  host: process.env.DB_HOST,
+  port: parseInt(process.env.DB_PORT),
+  username: process.env.DB_USERNAME,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
   entities: [User, Question, Answer],
-  migrations: ['src/migrations/**/*{.ts,.js}'],
   synchronize: false,
   logging: true,
-  migrationsRun: false,
-  migrationsTableName: 'migrations_history',
 });

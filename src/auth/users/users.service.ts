@@ -22,9 +22,7 @@ export class UsersService {
     };
   }
 
-  // 안전한 검색 메서드 - SQL 인젝션 방어
   async searchUsers(searchQuery: string) {
-    // TypeORM의 Like 연산자 사용 - 자동 파라미터화
     const users = await this.usersRepository.find({
       where: [
         { userId: Like(`%${searchQuery}%`) },

@@ -36,22 +36,22 @@ export class AnswerController {
     return this.answerService.findByQuestionId(questionId);
   }
 
-  @Get(':id')
-  async findOne(
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<AnswerResponseDto> {
-    return this.answerService.findOne(id);
-  }
+  // @Get(':id')
+  // async findOne(
+  //   @Param('id', ParseIntPipe) id: number,
+  // ): Promise<AnswerResponseDto> {
+  //   return this.answerService.findOne(id);
+  // }
 
-  @Post(':id')
-  async update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body(ValidationPipe) updateAnswerDto: UpdateAnswerDto,
-    @Body('mbrId') mbrId?: number,
-  ): Promise<AnswerResponseDto> {
-    const userMbrId = mbrId || 0;
-    return this.answerService.update(id, updateAnswerDto, userMbrId);
-  }
+  // @Post(':id')
+  // async update(
+  //   @Param('id', ParseIntPipe) id: number,
+  //   @Body(ValidationPipe) updateAnswerDto: UpdateAnswerDto,
+  //   @Body('mbrId') mbrId?: number,
+  // ): Promise<AnswerResponseDto> {
+  //   const userMbrId = mbrId || 0;
+  //   return this.answerService.update(id, updateAnswerDto, userMbrId);
+  // }
 
   @Post(':id/del')
   async remove(
@@ -63,20 +63,20 @@ export class AnswerController {
     return this.answerService.remove(id, sessionMbrId);
   }
 
-  @Post(':id/vote')
-  async vote(
-    @Param('id', ParseIntPipe) id: number,
-    @Body('direction') direction: 'up' | 'down',
-  ): Promise<AnswerResponseDto> {
-    return this.answerService.vote(id, direction);
-  }
+  // @Post(':id/vote')
+  // async vote(
+  //   @Param('id', ParseIntPipe) id: number,
+  //   @Body('direction') direction: 'up' | 'down',
+  // ): Promise<AnswerResponseDto> {
+  //   return this.answerService.vote(id, direction);
+  // }
 
-  @Post(':id/accept')
-  async accept(
-    @Param('id', ParseIntPipe) id: number,
-    @Body('mbrId') mbrId?: number,
-  ): Promise<AnswerResponseDto> {
-    const userMbrId = mbrId || 0;
-    return this.answerService.markAsAccepted(id, userMbrId);
-  }
+  // @Post(':id/accept')
+  // async accept(
+  //   @Param('id', ParseIntPipe) id: number,
+  //   @Body('mbrId') mbrId?: number,
+  // ): Promise<AnswerResponseDto> {
+  //   const userMbrId = mbrId || 0;
+  //   return this.answerService.markAsAccepted(id, userMbrId);
+  // }
 }

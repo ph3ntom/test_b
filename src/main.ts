@@ -6,6 +6,7 @@ import RedisStore from 'connect-redis';
 import { createClient } from 'redis';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
+import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -70,6 +71,9 @@ async function bootstrap() {
   );
 
   app.useGlobalPipes(new ValidationPipe());
+
+  // ⭐ 글로벌 예외 필터 설정 (에러 코드 및 메시지 숨김)
+  app.useGlobalFilters(new GlobalExceptionFilter());
 
   // 글로벌 API prefix 설정
   app.setGlobalPrefix('api');
