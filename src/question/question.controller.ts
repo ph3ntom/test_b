@@ -74,9 +74,16 @@ export class QuestionController {
     @Body('title') title: string,
     @Body('description') description: string,
     @Body('tags') tags: string,
-    @Body('mbrId') mbrId: string,
+    @Req() req,
     @UploadedFile() file?: Express.Multer.File,
   ): Promise<QuestionResponseDto> {
+    // 세션에서 mbrId 가져오기 (보안: 클라이언트 입력값 무시)
+    const sessionMbrId = req.session?.mbrId || 0;
+
+    if (!sessionMbrId || sessionMbrId === 0) {
+      throw new BadRequestException('로그인이 필요합니다.');
+    }
+
     // 파일 크기 검증 (타입별 차등)
     if (file) {
       FileValidator.validateFileSize(file);
@@ -109,7 +116,7 @@ export class QuestionController {
       title,
       description,
       tags: tagsArray,
-      mbrId: parseInt(mbrId, 10) || 0,
+      mbrId: sessionMbrId,
     };
 
     return this.questionService.create(createQuestionDto, file);
