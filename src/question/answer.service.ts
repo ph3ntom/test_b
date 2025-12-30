@@ -29,11 +29,14 @@ export class AnswerService {
     createAnswerDto: CreateAnswerDto,
     mbrId: number,
   ): Promise<AnswerResponseDto> {
-    if (mbrId > 0) {
-      const user = await this.userRepository.findOne({ where: { mbrId } });
-      if (!user) {
-        throw new NotFoundException('User not found');
-      }
+    // 로그인 검증 (mbrId 필수)
+    if (!mbrId || mbrId === 0) {
+      throw new ForbiddenException('로그인이 필요합니다.');
+    }
+
+    const user = await this.userRepository.findOne({ where: { mbrId } });
+    if (!user) {
+      throw new NotFoundException('User not found. Please login to create an answer.');
     }
 
     const question = await this.questionRepository.findOne({

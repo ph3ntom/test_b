@@ -23,10 +23,11 @@ export class AnswerController {
   async create(
     @Param('questionId', ParseIntPipe) questionId: number,
     @Body(ValidationPipe) createAnswerDto: CreateAnswerDto,
-    @Body('mbrId') mbrId?: number,
+    @Req() req,
   ): Promise<AnswerResponseDto> {
-    const userMbrId = mbrId || 0;
-    return this.answerService.create(questionId, createAnswerDto, userMbrId);
+    // 세션에서 mbrId 가져오기 (보안: 클라이언트 입력값 무시)
+    const sessionMbrId = req.session?.mbrId || 0;
+    return this.answerService.create(questionId, createAnswerDto, sessionMbrId);
   }
 
   @Get()
@@ -47,10 +48,11 @@ export class AnswerController {
   // async update(
   //   @Param('id', ParseIntPipe) id: number,
   //   @Body(ValidationPipe) updateAnswerDto: UpdateAnswerDto,
-  //   @Body('mbrId') mbrId?: number,
+  //   @Req() req,
   // ): Promise<AnswerResponseDto> {
-  //   const userMbrId = mbrId || 0;
-  //   return this.answerService.update(id, updateAnswerDto, userMbrId);
+  //   // 세션에서 mbrId 가져오기 (보안: 클라이언트 입력값 무시)
+  //   const sessionMbrId = req.session?.mbrId || 0;
+  //   return this.answerService.update(id, updateAnswerDto, sessionMbrId);
   // }
 
   @Post(':id/del')
@@ -74,9 +76,10 @@ export class AnswerController {
   // @Post(':id/accept')
   // async accept(
   //   @Param('id', ParseIntPipe) id: number,
-  //   @Body('mbrId') mbrId?: number,
+  //   @Req() req,
   // ): Promise<AnswerResponseDto> {
-  //   const userMbrId = mbrId || 0;
-  //   return this.answerService.markAsAccepted(id, userMbrId);
+  //   // 세션에서 mbrId 가져오기 (보안: 클라이언트 입력값 무시)
+  //   const sessionMbrId = req.session?.mbrId || 0;
+  //   return this.answerService.markAsAccepted(id, sessionMbrId);
   // }
 }
